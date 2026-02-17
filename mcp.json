@@ -1,0 +1,44 @@
+{
+  "$schema": "https://docs.1mcp.app/schemas/v1.0.0/mcp-config.json",
+  "version": "1.0.0",
+  "mcpServers": {
+    "semaphore": {
+      "type": "streamable-http",
+      "url": "https://mcp.semaphoreci.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${SEMAPHORE_MCP_TOKEN}"
+      },
+      "tags": ["ci", "devops"]
+    },
+    "jam": {
+      "type": "streamable-http",
+      "url": "https://mcp.jam.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer ${JAM_MCP_TOKEN}"
+      },
+      "tags": ["frontend", "debug"]
+    },
+    "sentry": {
+      "type": "streamable-http",
+      "url": "https://mcp.sentry.dev/mcp",
+      "tags": ["observability"]
+    },
+    "shortcut": {
+      "command": "npx",
+      "args": ["-y", "@shortcut/mcp@latest"],
+      "env": {
+        "SHORTCUT_API_TOKEN": "${SHORTCUT_API_TOKEN}"
+      },
+      "tags": ["pm", "project"]
+    },
+    "newrelic": {
+      "command": "npx",
+      "args": ["-y", "newrelic-mcp"],
+      "env": {
+        "NEW_RELIC_API_KEY": "${NEW_RELIC_API_KEY}",
+        "NEW_RELIC_ACCOUNT_ID": "${NEW_RELIC_ACCOUNT_ID}"
+      },
+      "tags": ["observability"]
+    }
+  }
+}
