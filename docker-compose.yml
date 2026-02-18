@@ -7,23 +7,28 @@ services:
       - ./logs:/usr/src/app/logs
     environment:
       ONE_MCP_HOST: "0.0.0.0"
-      ONE_MCP_PORT: "3050"
+      ONE_MCP_PORT: "${ONE_MCP_PORT:-3050}"
       ONE_MCP_CONFIG: "/usr/src/app/mcp.json"
-      ONE_MCP_LOG_LEVEL: "info"
-      ONE_MCP_ENABLE_ENV_SUBSTITUTION: "true"
-      ONE_MCP_ENABLE_CONFIG_RELOAD: "true"
+      ONE_MCP_LOG_LEVEL: "${ONE_MCP_LOG_LEVEL:-info}"
+      ONE_MCP_ENABLE_ENV_SUBSTITUTION: "${ONE_MCP_ENABLE_ENV_SUBSTITUTION:-true}"
+      ONE_MCP_ENABLE_CONFIG_RELOAD: "${ONE_MCP_ENABLE_CONFIG_RELOAD:-true}"
+      ONE_MCP_ENABLE_ASYNC_LOADING: "${ONE_MCP_ENABLE_ASYNC_LOADING:-true}"
+      ONE_MCP_ENABLE_AUTH: "${ONE_MCP_ENABLE_AUTH:-false}"
+      ONE_MCP_EXTERNAL_URL: "${ONE_MCP_EXTERNAL_URL:-https://localhost:9494}"
       # Secrets passed through for ${VAR} substitution in mcp.json
       SEMAPHORE_MCP_TOKEN: ${SEMAPHORE_MCP_TOKEN:?Set in .env}
       SHORTCUT_API_TOKEN: ${SHORTCUT_API_TOKEN:?Set in .env}
       NEW_RELIC_API_KEY: ${NEW_RELIC_API_KEY:?Set in .env}
       NEW_RELIC_ACCOUNT_ID: ${NEW_RELIC_ACCOUNT_ID:?Set in .env}
       JAM_MCP_TOKEN: ${JAM_MCP_TOKEN:?Set in .env}
+      INTERCOM_API_TOKEN: ${INTERCOM_API_TOKEN:?Set in .env}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3050/health"]
-      interval: 30s
+      test: ["CMD", "node", "-e", "fetch('http://localhost:${ONE_MCP_PORT:-3050}/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 30s
 
   proxy:
     image: nginx:alpine
@@ -32,8 +37,9 @@ services:
       - ./proxy/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
     environment:
       MCP_PROXY_TOKEN: ${MCP_PROXY_TOKEN:?Set in .env}
+      ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}
     ports:
-      - "127.0.0.1:9494:8080"
+      - "127.0.0.1:${ONE_MCP_EXTERNAL_PORT:-9494}:8080"
     depends_on:
       1mcp:
         condition: service_healthy

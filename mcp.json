@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "mcpServers": {
     "semaphore": {
-      "type": "streamable-http",
+      "type": "http",
       "url": "https://mcp.semaphoreci.com/mcp",
       "headers": {
         "Authorization": "Bearer ${SEMAPHORE_MCP_TOKEN}"
@@ -11,7 +11,7 @@
       "tags": ["ci", "devops"]
     },
     "jam": {
-      "type": "streamable-http",
+      "type": "http",
       "url": "https://mcp.jam.dev/mcp",
       "headers": {
         "Authorization": "Bearer ${JAM_MCP_TOKEN}"
@@ -19,7 +19,7 @@
       "tags": ["frontend", "debug"]
     },
     "sentry": {
-      "type": "streamable-http",
+      "type": "http",
       "url": "https://mcp.sentry.dev/mcp",
       "tags": ["observability"]
     },
@@ -39,6 +39,16 @@
         "NEW_RELIC_ACCOUNT_ID": "${NEW_RELIC_ACCOUNT_ID}"
       },
       "tags": ["observability"]
+    },
+    "intercom": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.intercom.com/mcp",
+        "--header",
+        "Authorization:Bearer ${INTERCOM_API_TOKEN}"
+      ],
+      "tags": ["support"]
     }
   }
 }

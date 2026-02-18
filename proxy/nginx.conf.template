@@ -1,3 +1,5 @@
+map_hash_bucket_size 128;
+
 map $http_authorization $auth_valid {
     default                              0;
     "Bearer ${MCP_PROXY_TOKEN}"          1;
@@ -12,7 +14,7 @@ server {
             return 401 '{"error":"Unauthorized"}';
         }
 
-        proxy_pass http://1mcp:3050;
+        proxy_pass http://1mcp:${ONE_MCP_PORT};
         proxy_http_version 1.1;
 
         proxy_set_header Host $host;
@@ -35,7 +37,7 @@ server {
     }
 
     location /health {
-        proxy_pass http://1mcp:3050/health;
+        proxy_pass http://1mcp:${ONE_MCP_PORT}/health;
         proxy_http_version 1.1;
     }
 }
