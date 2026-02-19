@@ -22,6 +22,7 @@ services:
       NEW_RELIC_ACCOUNT_ID: ${NEW_RELIC_ACCOUNT_ID:?Set in .env}
       JAM_MCP_TOKEN: ${JAM_MCP_TOKEN:?Set in .env}
       INTERCOM_API_TOKEN: ${INTERCOM_API_TOKEN:?Set in .env}
+      SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:?Set in .env}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:${ONE_MCP_PORT:-3050}/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
