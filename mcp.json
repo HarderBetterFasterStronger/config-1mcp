@@ -19,10 +19,11 @@
       "tags": ["frontend", "debug"]
     },
     "sentry": {
-      "type": "http",
-      "url": "https://mcp.sentry.dev/mcp",
-      "headers": {
-        "Authorization": "Bearer ${SENTRY_AUTH_TOKEN}"
+      "command": "npx",
+      "args": ["-y", "@sentry/mcp-server@latest"],
+      "env": {
+        "SENTRY_ACCESS_TOKEN": "${SENTRY_AUTH_TOKEN}",
+        "SENTRY_HOST": "${SENTRY_HOST}"
       },
       "tags": ["observability"]
     },

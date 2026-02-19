@@ -14,7 +14,7 @@ This repo is configuration only. There's no application code to build. It runs t
 |--------|-----------|-------------|
 | [Semaphore](https://semaphoreci.com) | HTTP | CI/CD pipelines and build management |
 | [Jam](https://jam.dev) | HTTP | Frontend bug reports and session replay |
-| [Sentry](https://sentry.io) | HTTP | Error monitoring and observability |
+| [Sentry](https://sentry.io) | stdio | Error monitoring and observability |
 | [Shortcut](https://shortcut.com) | stdio | Project management (stories, epics, iterations) |
 | [New Relic](https://newrelic.com) | stdio | APM, NRQL queries, alerting |
 | [Intercom](https://intercom.com) | stdio | Customer conversations and contact lookup |
@@ -113,6 +113,8 @@ If config reload is enabled (it is by default), the agent picks up changes to `m
 
 | Variable | Server |
 |----------|--------|
+| `SENTRY_AUTH_TOKEN` | Sentry |
+| `SENTRY_HOST` | Sentry (your org, e.g. `your-org.sentry.io`) |
 | `SEMAPHORE_MCP_TOKEN` | Semaphore CI |
 | `SHORTCUT_API_TOKEN` | Shortcut |
 | `NEW_RELIC_API_KEY` | New Relic |
@@ -148,7 +150,7 @@ The health endpoint is useful for quick checks:
 curl http://localhost:9494/health
 ```
 
-If a server requires OAuth (like Sentry), visit `https://localhost:9494/oauth` to complete the authorization flow.
+Sentry uses a local stdio process with a User Auth Token for unattended access — no OAuth browser flow required.
 
 ## Project structure
 
