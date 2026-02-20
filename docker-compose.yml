@@ -41,8 +41,8 @@ services:
     volumes:
       - ./proxy/nginx.conf.oauth.template:/etc/nginx/templates/default.conf.template:ro
       # Optional templates for switching auth modes
-      - ./proxy/nginx.conf.oauth.template:/etc/nginx/templates/nginx.conf.oauth.template:ro
-      - ./proxy/nginx.conf.token.template:/etc/nginx/templates/nginx.conf.token.template:ro
+      # - ./proxy/nginx.conf.oauth.template:/etc/nginx/templates/nginx.conf.oauth.template:ro
+      # - ./proxy/nginx.conf.token.template:/etc/nginx/templates/nginx.conf.token.template:ro
     environment:
       MCP_PROXY_TOKEN: ${MCP_PROXY_TOKEN:?Set in .env}
       ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}
