@@ -53,6 +53,21 @@
         "Authorization:Bearer ${INTERCOM_API_TOKEN}"
       ],
       "tags": ["support"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "tags": ["local", "files"]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "tags": ["memory", "notes"]
+    },
+    "notion": {
+      "transport": "http",
+      "url": "https://mcp.notion.com/mcp",
+      "tags": ["notion", "docs", "notes"]
     }
   }
 }

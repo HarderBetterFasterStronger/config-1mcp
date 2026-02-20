@@ -5,6 +5,7 @@ services:
     volumes:
       - ./mcp.json:/usr/src/app/mcp.json:ro
       - ./logs:/usr/src/app/logs
+      - ./data/1mcp:/root/.config/1mcp
     environment:
       ONE_MCP_HOST: "0.0.0.0"
       ONE_MCP_PORT: "${ONE_MCP_PORT:-3050}"
@@ -15,6 +16,7 @@ services:
       ONE_MCP_ENABLE_ASYNC_LOADING: "${ONE_MCP_ENABLE_ASYNC_LOADING:-true}"
       ONE_MCP_ENABLE_AUTH: "${ONE_MCP_ENABLE_AUTH:-false}"
       ONE_MCP_EXTERNAL_URL: "${ONE_MCP_EXTERNAL_URL:-https://localhost:9494}"
+      ONE_MCP_TRUST_PROXY: "${ONE_MCP_TRUST_PROXY:-uniquelocal}"
       # Secrets passed through for ${VAR} substitution in mcp.json
       SEMAPHORE_MCP_TOKEN: ${SEMAPHORE_MCP_TOKEN:?Set in .env}
       SHORTCUT_API_TOKEN: ${SHORTCUT_API_TOKEN:?Set in .env}
@@ -36,7 +38,10 @@ services:
     image: nginx:alpine
     container_name: 1mcp-proxy
     volumes:
-      - ./proxy/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./proxy/nginx.conf.oauth.template:/etc/nginx/templates/default.conf.template:ro
+      # Optional templates for switching auth modes
+      - ./proxy/nginx.conf.oauth.template:/etc/nginx/templates/nginx.conf.oauth.template:ro
+      - ./proxy/nginx.conf.token.template:/etc/nginx/templates/nginx.conf.token.template:ro
     environment:
       MCP_PROXY_TOKEN: ${MCP_PROXY_TOKEN:?Set in .env}
       ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}

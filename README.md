@@ -6,7 +6,7 @@ One connection. All your tools.
 
 ## What's in the box
 
-This repo is configuration only. There's no application code to build. It runs the official `ghcr.io/1mcp-app/agent` Docker image behind an nginx reverse proxy that handles bearer token authentication.
+This repo is configuration only. There's no application code to build. It runs the official `ghcr.io/1mcp-app/agent` Docker image behind an nginx reverse proxy. Authentication is now handled by 1MCP's OAuth flow (no proxy bearer token required for `/mcp`).
 
 **Currently configured MCP servers:**
 
@@ -18,6 +18,9 @@ This repo is configuration only. There's no application code to build. It runs t
 | [Shortcut](https://shortcut.com) | stdio | Project management (stories, epics, iterations) |
 | [New Relic](https://newrelic.com) | stdio | APM, NRQL queries, alerting |
 | [Intercom](https://intercom.com) | stdio | Customer conversations and contact lookup |
+| Filesystem | stdio | Local file access (restricted to `/tmp`) |
+| Memory | stdio | Scratchpad / notes |
+| [Notion](https://notion.so) | HTTP | Notion MCP (OAuth) |
 
 That's 100+ tools accessible through a single authenticated endpoint.
 
@@ -47,10 +50,9 @@ Point your MCP client at:
 
 ```
 URL:   http://localhost:9494/mcp
-Token: Bearer <your MCP_PROXY_TOKEN from .env>
 ```
 
-That's it. Your AI assistant now has access to every configured MCP server through this single endpoint.
+On first connect, your MCP client will run an OAuth handshake against 1MCP. Complete the browser flow, then restart your client if it doesn't reconnect automatically.
 
 ## Architecture
 
@@ -58,7 +60,7 @@ That's it. Your AI assistant now has access to every configured MCP server throu
 AI Assistant (Claude, Cursor, etc.)
          |
          v
-   nginx proxy (:9494)          -- bearer token auth, SSE streaming
+   nginx proxy (:9494)          -- forwards OAuth + MCP endpoints
          |
          v
    1MCP agent (:3050)           -- routing, tool aggregation, config reload
@@ -67,8 +69,11 @@ AI Assistant (Claude, Cursor, etc.)
    Semaphore  Jam  Shortcut  New Relic  Intercom  ...
 ```
 
-The proxy only exposes two paths:
-- `/mcp` - the main MCP endpoint (authenticated)
+The proxy exposes these paths:
+- `/mcp` - the main MCP endpoint (OAuth-authenticated by 1MCP)
+- `/oauth` - OAuth management dashboard
+- `/.well-known/*` - OAuth discovery endpoints
+- `/authorize`, `/token`, `/revoke`, `/register` - OAuth endpoints
 - `/health` - health check (unauthenticated)
 
 All traffic stays on localhost. The proxy binds to `127.0.0.1` only.
@@ -129,12 +134,141 @@ If config reload is enabled (it is by default), the agent picks up changes to `m
 |----------|---------|-------------|
 | `ONE_MCP_PORT` | `3050` | Internal agent port |
 | `ONE_MCP_EXTERNAL_PORT` | `9494` | Host-facing proxy port |
-| `ONE_MCP_EXTERNAL_URL` | `https://localhost:9494` | Public URL for OAuth callbacks |
+| `ONE_MCP_EXTERNAL_URL` | `http://127.0.0.1:9494` | Public URL for OAuth callbacks |
 | `ONE_MCP_LOG_LEVEL` | `info` | Log verbosity (debug, info, warn, error) |
 | `ONE_MCP_ENABLE_ENV_SUBSTITUTION` | `true` | Allow `${VAR}` in mcp.json |
 | `ONE_MCP_ENABLE_CONFIG_RELOAD` | `true` | Watch mcp.json for changes |
 | `ONE_MCP_ENABLE_ASYNC_LOADING` | `true` | Load servers in parallel |
-| `ONE_MCP_ENABLE_AUTH` | `false` | 1MCP's own auth (disabled since nginx handles it) |
+| `ONE_MCP_ENABLE_AUTH` | `true` | Enable 1MCP OAuth authentication |
+| `ONE_MCP_TRUST_PROXY` | `uniquelocal` | Trust proxy for X-Forwarded-* |
+
+### OAuth vs. legacy token bypass
+
+Previously this setup relied on a proxy bearer token (`MCP_PROXY_TOKEN`) to gate `/mcp`. That mode bypassed 1MCP auth entirely.
+
+Now:
+- `/mcp` is **not** protected by the proxy token.
+- 1MCP OAuth is enabled (`ONE_MCP_ENABLE_AUTH=true`).
+- Clients complete the OAuth handshake once, then reuse the issued session.
+- 1MCP state is persisted via `./data/1mcp:/root/.config/1mcp` in `docker-compose.yml` to survive restarts.
+
+If you still want to use a proxy token gate, you'd need to disable 1MCP OAuth and reintroduce the bearer check on `/mcp`. That is not the current configuration.
+
+### Switching Back to Proxy Token Auth (Bypass Mode)
+
+You can revert to the legacy proxy-token gate with a simple config swap.
+
+**1. Update `.env`**
+
+```
+ONE_MCP_ENABLE_AUTH=false
+MCP_PROXY_TOKEN=your-proxy-bearer-token
+```
+
+**2. Swap nginx template**
+
+Edit `docker-compose.yml` and change the proxy template mount:
+
+From:
+```
+./proxy/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+```
+
+To:
+```
+./proxy/nginx.conf.token.template:/etc/nginx/templates/default.conf.template:ro
+```
+
+**3. Restart**
+
+```bash
+docker compose up -d --force-recreate proxy 1mcp
+```
+
+This restores the original flow:
+- Clients must send `Authorization: Bearer ${MCP_PROXY_TOKEN}` to `/mcp`
+- 1MCP OAuth is disabled
+- `/oauth` and OAuth endpoints are not used
+
+To switch back to OAuth mode, revert the template to `proxy/nginx.conf.oauth.template` (or `proxy/nginx.conf.template`) and set `ONE_MCP_ENABLE_AUTH=true`.
+
+#### Client configuration (Token Bypass)
+
+Claude Code:
+
+```json
+{
+  "type": "http",
+  "url": "http://127.0.0.1:9494/mcp",
+  "headers": {
+    "Authorization": "Bearer ${MCP_PROXY_TOKEN}"
+  }
+}
+```
+
+CLI:
+
+```bash
+claude mcp add --transport http 1mcp http://127.0.0.1:9494/mcp --header "Authorization: Bearer ${MCP_PROXY_TOKEN}"
+```
+
+Codex (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.1mcp]
+url = "http://127.0.0.1:9494/mcp"
+headers = { Authorization = "Bearer ${MCP_PROXY_TOKEN}" }
+```
+
+CLI:
+
+```bash
+codex mcp add 1mcp http://127.0.0.1:9494/mcp --header "Authorization: Bearer ${MCP_PROXY_TOKEN}"
+```
+
+### Claude Code configuration (OAuth)
+
+- Use this exact JSON object:
+
+```json
+{
+  "type": "http",
+  "url": "http://127.0.0.1:9494/mcp"
+}
+```
+
+- **Do not** set an `Authorization` header for this server.
+- On first connect, complete the OAuth flow in your browser (via `http://127.0.0.1:9494/oauth`).
+- Restart Claude Code if it doesn't reconnect automatically after auth.
+
+You can also add it via CLI:
+
+```bash
+claude mcp add --transport http 1mcp http://127.0.0.1:9494/mcp
+```
+
+### Codex configuration (OAuth)
+
+Point Codex at the same MCP URL and complete the OAuth flow once:
+
+- Server URL: `http://127.0.0.1:9494/mcp`
+- No bearer token header.
+- Complete OAuth at `http://127.0.0.1:9494/oauth`.
+
+If you use `~/.codex/config.toml`, add this exact block:
+
+```toml
+[mcp_servers.1mcp]
+url = "http://127.0.0.1:9494/mcp"
+```
+
+You can also add it via CLI:
+
+```bash
+codex mcp add 1mcp http://127.0.0.1:9494/mcp
+```
+
+The exact file or UI depends on which Codex client you're using; the key requirement is to use OAuth, not a static bearer token.
 
 ## Logs and troubleshooting
 

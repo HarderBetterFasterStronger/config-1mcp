@@ -1,22 +1,19 @@
+map_hash_bucket_size 128;
+
+map $http_authorization $auth_valid {
+    default                              0;
+    "Bearer ${MCP_PROXY_TOKEN}"          1;
+}
+
 server {
     listen 8080;
     server_name _;
 
-    # Map MCP-specific discovery endpoints used by some clients.
-    location ~ ^/\.well-known/(oauth-authorization-server|openid-configuration|oauth-protected-resource)/mcp$ {
-        proxy_pass http://1mcp:${ONE_MCP_PORT}/.well-known/$1;
-        proxy_http_version 1.1;
+    location /mcp {
+        if ($auth_valid = 0) {
+            return 401 '{"error":"Unauthorized"}';
+        }
 
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Connection '';
-        proxy_set_header Accept-Encoding '';
-    }
-
-    # Pass everything else through to 1MCP (OAuth + MCP endpoints).
-    location / {
         proxy_pass http://1mcp:${ONE_MCP_PORT};
         proxy_http_version 1.1;
 
@@ -37,5 +34,10 @@ server {
         chunked_transfer_encoding on;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
+    }
+
+    location /health {
+        proxy_pass http://1mcp:${ONE_MCP_PORT}/health;
+        proxy_http_version 1.1;
     }
 }
