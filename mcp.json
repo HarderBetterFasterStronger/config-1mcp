@@ -68,6 +68,14 @@
       "transport": "http",
       "url": "https://mcp.notion.com/mcp",
       "tags": ["notion", "docs", "notes"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "tags": ["code", "git", "github"]
     }
   }
 }

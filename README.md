@@ -18,9 +18,10 @@ This repo is configuration only. There's no application code to build. It runs t
 | [Shortcut](https://shortcut.com) | stdio | Project management (stories, epics, iterations) |
 | [New Relic](https://newrelic.com) | stdio | APM, NRQL queries, alerting |
 | [Intercom](https://intercom.com) | stdio | Customer conversations and contact lookup |
-| Filesystem | stdio | Local file access (restricted to `/tmp`) |
-| Memory | stdio | Scratchpad / notes |
+| [Filesystem](https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem) | stdio | Local file access (restricted to `/tmp`) |
+| [Memory](https://www.npmjs.com/package/@modelcontextprotocol/server-memory) | stdio | Scratchpad / notes |
 | [Notion](https://notion.so) | HTTP | Notion MCP (OAuth) |
+| [GitHub](https://github.com) | stdio | Repo access via GitHub MCP |
 
 That's 100+ tools accessible through a single authenticated endpoint.
 
@@ -126,6 +127,7 @@ If config reload is enabled (it is by default), the agent picks up changes to `m
 | `NEW_RELIC_ACCOUNT_ID` | New Relic |
 | `JAM_MCP_TOKEN` | Jam |
 | `INTERCOM_API_TOKEN` | Intercom |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub MCP |
 | `MCP_PROXY_TOKEN` | nginx proxy auth |
 
 **Optional tuning** (with defaults):
