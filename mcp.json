@@ -76,6 +76,23 @@
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
       },
       "tags": ["code", "git", "github"]
+    },
+    "trigger": {
+      "command": "npx",
+      "args": ["-y", "trigger.dev@latest", "mcp"],
+      "env": {
+        "TRIGGER_ACCESS_TOKEN": "${TRIGGER_ACCESS_TOKEN}"
+      },
+      "tags": ["tasks", "jobs", "background"]
+    },
+    "postgres-replica": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${REPLICA_DATABASE_URL}"
+      ],
+      "tags": ["database", "postgres", "readonly"]
     }
   }
 }
