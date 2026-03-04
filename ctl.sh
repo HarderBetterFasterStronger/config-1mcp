@@ -11,13 +11,20 @@ PLIST_DST="$HOME/Library/LaunchAgents/$PLIST_NAME.plist"
 
 cd "$COMPOSE_DIR"
 
+install_plist() {
+  mkdir -p "$(dirname "$PLIST_DST")"
+  while IFS= read -r line; do
+    printf '%s\n' "${line//__COMPOSE_DIR__/$COMPOSE_DIR}"
+  done < "$PLIST_SRC" > "$PLIST_DST"
+}
+
 case "${1:-}" in
   start)
     echo "Starting 1mcp stack..."
     docker compose up -d
     echo "Loading watchdog..."
     [[ -f "$PLIST_DST" ]] && launchctl unload "$PLIST_DST" 2>/dev/null || true
-    sed "s|__COMPOSE_DIR__|$COMPOSE_DIR|g" "$PLIST_SRC" > "$PLIST_DST"
+    install_plist
     launchctl load "$PLIST_DST"
     echo "Done. Stack running, watchdog active."
     ;;
@@ -54,7 +61,7 @@ case "${1:-}" in
 
   watchdog-load)
     [[ -f "$PLIST_DST" ]] && launchctl unload "$PLIST_DST" 2>/dev/null || true
-    sed "s|__COMPOSE_DIR__|$COMPOSE_DIR|g" "$PLIST_SRC" > "$PLIST_DST"
+    install_plist
     launchctl load "$PLIST_DST"
     echo "Watchdog loaded."
     ;;
