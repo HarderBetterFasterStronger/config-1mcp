@@ -47,12 +47,16 @@ docker compose up -d
 
 This pulls the 1MCP agent image and an nginx:alpine image, then starts both containers. The agent will connect to all configured MCP servers in parallel and report readiness via health checks.
 
-**3. Connect your AI tool**
+**3. Connect OAuth services (Notion, Shortcut, etc)**
 
-Point your MCP client at:
+Some MCP servers don't take an API key through config, but use OAuth instead. To configure them, visit http://localhost:9494/oauth to sign in to them.
+
+**4. Connect your AI tool**
+
+See [Client Configuration](#client-configuration) or point your MCP client at:
 
 ```
-URL:   http://localhost:9494/mcp
+URL:   http://127.0.0.1:9494/mcp
 ```
 
 On first connect, your MCP client will run an OAuth handshake against 1MCP. Complete the browser flow, then restart your client if it doesn't reconnect automatically.
@@ -198,7 +202,9 @@ This restores the original flow:
 
 To switch back to OAuth mode, revert the template to `proxy/nginx.conf.oauth.template` (or `proxy/nginx.conf.template`) and set `ONE_MCP_ENABLE_AUTH=true`.
 
-#### Client configuration (Token Bypass)
+### Client configuration
+
+#### Token Bypass
 
 Claude Code:
 
@@ -232,7 +238,7 @@ CLI:
 codex mcp add 1mcp http://127.0.0.1:9494/mcp --header "Authorization: Bearer ${MCP_PROXY_TOKEN}"
 ```
 
-### Claude Code configuration (OAuth)
+#### Claude Code (OAuth)
 
 - Use this exact JSON object:
 
@@ -253,7 +259,7 @@ You can also add it via CLI:
 claude mcp add --transport http 1mcp http://127.0.0.1:9494/mcp
 ```
 
-### Codex configuration (OAuth)
+#### Codex (OAuth)
 
 Point Codex at the same MCP URL and complete the OAuth flow once:
 

@@ -28,12 +28,8 @@
       "tags": ["observability"]
     },
     "shortcut": {
-      "command": "npx",
-      "args": ["-y", "@shortcut/mcp@latest"],
-      "env": {
-        "SHORTCUT_API_TOKEN": "${SHORTCUT_API_TOKEN}"
-      },
-      "tags": ["pm", "project"]
+      "type": "http",
+      "url": "https://mcp.shortcut.com/mcp"
     },
     "newrelic": {
       "command": "npx",
