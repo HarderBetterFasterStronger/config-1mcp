@@ -1,0 +1,77 @@
+display_information:
+  name: 1MCP
+  description: MCP proxy for AI clients
+  background_color: "#1a1a2e"
+features:
+  app_home:
+    home_tab_enabled: false
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: 1mcp
+    always_online: false
+oauth_config:
+  redirect_urls:
+    - http://localhost:3118/oauth/callback
+  scopes:
+    user:
+      - search:read.public
+      - search:read.private
+      - search:read.mpim
+      - search:read.im
+      - search:read.files
+      - search:read.users
+      - files:read
+      - files:write
+      - chat:write
+      - channels:history
+      - groups:history
+      - mpim:history
+      - im:history
+      - channels:read
+      - groups:read
+      - im:read
+      - mpim:read
+      - channels:write
+      - groups:write
+      - im:write
+      - mpim:write
+      - channels:write.invites
+      - channels:write.topic
+      - groups:write.invites
+      - groups:write.topic
+      - im:write.topic
+      - mpim:write.topic
+      - reactions:read
+      - reactions:write
+      - pins:read
+      - pins:write
+      - bookmarks:read
+      - bookmarks:write
+      - stars:read
+      - stars:write
+      - canvases:read
+      - canvases:write
+      - lists:read
+      - lists:write
+      - users:read
+      - users:read.email
+      - users:write
+      - users.profile:read
+      - users.profile:write
+      - usergroups:read
+      - usergroups:write
+      - emoji:read
+      - team:read
+      - dnd:read
+      - dnd:write
+      - reminders:read
+      - reminders:write
+    bot:
+      - chat:write
+  pkce_enabled: false
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
+  is_mcp_enabled: true

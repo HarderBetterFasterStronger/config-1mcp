@@ -1,0 +1,23 @@
+*.env
+.env.bak*
+node_modules/
+logs/
+data/
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+.claude/1mcp.mcp.json
+
+# Your server config - start from mcp.example.json
+mcp.json
+
+# Private overlay (personal config, launchd agents) - its own git repo, see README
+private/
+
+# Local-only notes
+.local-dev/
+
+# Claude Code project instructions - stays at repo root, not published
+CLAUDE.md

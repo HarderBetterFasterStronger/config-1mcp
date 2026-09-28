@@ -1,0 +1,139 @@
+{
+  "$schema": "https://docs.1mcp.app/schemas/v1.0.0/mcp-config.json",
+  "version": "1.0.0",
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "tags": [
+        "code",
+        "git",
+        "github"
+      ]
+    },
+    "sentry": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@sentry/mcp-server@latest"
+      ],
+      "env": {
+        "SENTRY_ACCESS_TOKEN": "${SENTRY_AUTH_TOKEN}",
+        "SENTRY_HOST": "${SENTRY_HOST}"
+      },
+      "tags": [
+        "observability"
+      ]
+    },
+    "shortcut": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@shortcut/mcp@latest"
+      ],
+      "env": {
+        "SHORTCUT_API_TOKEN": "${SHORTCUT_API_TOKEN}"
+      },
+      "tags": [
+        "pm",
+        "project"
+      ]
+    },
+    "notion": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@notionhq/notion-mcp-server"
+      ],
+      "env": {
+        "NOTION_TOKEN": "${NOTION_TOKEN}"
+      },
+      "tags": [
+        "notion",
+        "docs",
+        "notes"
+      ]
+    },
+    "semaphore": {
+      "type": "http",
+      "url": "https://mcp.semaphoreci.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${SEMAPHORE_MCP_TOKEN}"
+      },
+      "tags": [
+        "ci",
+        "devops"
+      ]
+    },
+    "newrelic": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "newrelic-mcp"
+      ],
+      "env": {
+        "NEW_RELIC_API_KEY": "${NEW_RELIC_API_KEY}",
+        "NEW_RELIC_ACCOUNT_ID": "${NEW_RELIC_ACCOUNT_ID}"
+      },
+      "tags": [
+        "observability"
+      ]
+    },
+    "slack": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.slack.com/mcp",
+        "3118",
+        "--static-oauth-client-info",
+        "{\"client_id\":\"${SLACK_MCP_CLIENT_ID}\",\"client_secret\":\"${SLACK_MCP_CLIENT_SECRET}\"}"
+      ],
+      "tags": [
+        "communication",
+        "slack"
+      ]
+    },
+    "postgres_replica": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${REPLICA_DATABASE_URL}"
+      ],
+      "tags": [
+        "database",
+        "postgres",
+        "readonly"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ],
+      "tags": [
+        "local",
+        "files"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "tags": [
+        "memory",
+        "notes"
+      ]
+    }
+  }
+}

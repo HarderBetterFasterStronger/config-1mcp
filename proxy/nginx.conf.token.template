@@ -1,0 +1,140 @@
+map_hash_bucket_size 128;
+
+map $http_authorization $auth_header_valid {
+    default                              0;
+    "Bearer ${MCP_PROXY_TOKEN}"          1;
+}
+
+map $arg_token $auth_query_valid {
+    default                              0;
+    "${MCP_PROXY_TOKEN}"                 1;
+}
+
+server {
+    listen 8080;
+    server_name _;
+
+    # nginx's internal listen port is 8080, but the user reaches us on the
+    # host-mapped port (9494). Use relative redirects so nginx doesn't leak
+    # the internal port in Location headers (e.g. on trailing-slash 301s).
+    absolute_redirect off;
+
+    set $auth_valid 0;
+    if ($auth_header_valid) {
+        set $auth_valid 1;
+    }
+    if ($auth_query_valid) {
+        set $auth_valid 1;
+    }
+
+    # OAuth flow: browser-initiated and discovery requests that cannot carry
+    # a Bearer token. These must bypass token auth so the OAuth handshake can
+    # complete. 1mcp serves the upstream-proxied OAuth endpoints at its root
+    # path (/authorize, /token, /register, /revoke) per the agent's docs.
+    location /oauth/ {
+        proxy_pass http://${MCP_UPSTREAM}:${ONE_MCP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+    }
+
+    location /.well-known/ {
+        proxy_pass http://${MCP_UPSTREAM}:${ONE_MCP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+    }
+
+    location = /authorize {
+        proxy_pass http://${MCP_UPSTREAM}:${ONE_MCP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+    }
+
+    location = /token {
+        proxy_pass http://${MCP_UPSTREAM}:${ONE_MCP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+    }
+
+    location = /register {
+        proxy_pass http://${MCP_UPSTREAM}:${ONE_MCP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+    }
+
+    location = /revoke {
+        proxy_pass http://${MCP_UPSTREAM}:${ONE_MCP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+    }
+
+    # Token-protected catch-all: validates bearer token, proxies to 1MCP.
+    # Covers /mcp (streamable HTTP), /sse + /message (SSE transport),
+    # and any other endpoints the MCP client may need.
+    location / {
+        if ($auth_valid = 0) {
+            return 401 '{"error":"Unauthorized"}';
+        }
+
+        proxy_pass http://${MCP_UPSTREAM}:${ONE_MCP_PORT};
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection '';
+        proxy_set_header Accept-Encoding '';
+
+        # Preserve MCP headers
+        proxy_set_header mcp-session-id $http_mcp_session_id;
+        proxy_set_header Authorization $http_authorization;
+
+        # Streaming support (SSE + streamable HTTP)
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding on;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
+    location /health {
+        proxy_pass http://${MCP_UPSTREAM}:${ONE_MCP_PORT}/health;
+        proxy_http_version 1.1;
+    }
+}

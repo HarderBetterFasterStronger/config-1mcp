@@ -1,0 +1,71 @@
+services:
+  # Validates config before agent starts - rejects hyphenated server names
+  # that break LiteLLM prefix parsing. See: https://github.com/1mcp-app/agent/issues/263
+  validate-config:
+    image: node:22-alpine
+    container_name: 1mcp-validate
+    volumes:
+      - ${MCP_CONFIG:-./mcp.json}:/usr/src/app/mcp.json:ro
+      - ./validate-config.sh:/usr/src/app/validate-config.sh:ro
+    entrypoint: ["sh", "/usr/src/app/validate-config.sh", "/usr/src/app/mcp.json"]
+    restart: "no"
+
+  1mcp:
+    image: ghcr.io/1mcp-app/agent:latest
+    container_name: 1mcp-agent
+    env_file: .env
+    # Lets servers reach MCPs running on the host; Docker Desktop provides this natively, Linux doesn't
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      validate-config:
+        condition: service_completed_successfully
+    volumes:
+      - ${MCP_CONFIG:-./mcp.json}:/usr/src/app/mcp.json:ro
+      - ./logs:/usr/src/app/logs
+      - ./data/1mcp:/root/.config/1mcp
+      - ${HOME}/.mcp-auth:/root/.mcp-auth
+    environment:
+      ONE_MCP_HOST: "0.0.0.0"
+      ONE_MCP_PORT: "${ONE_MCP_PORT:-3050}"
+      NODE_OPTIONS: "--max-old-space-size=256 --max-semi-space-size=32"
+      ONE_MCP_CONFIG: "/usr/src/app/mcp.json"
+      ONE_MCP_LOG_LEVEL: "${ONE_MCP_LOG_LEVEL:-info}"
+      ONE_MCP_ENABLE_ENV_SUBSTITUTION: "${ONE_MCP_ENABLE_ENV_SUBSTITUTION:-true}"
+      ONE_MCP_ENABLE_CONFIG_RELOAD: "${ONE_MCP_ENABLE_CONFIG_RELOAD:-true}"
+      ONE_MCP_ENABLE_ASYNC_LOADING: "${ONE_MCP_ENABLE_ASYNC_LOADING:-true}"
+      ONE_MCP_ENABLE_AUTH: "${ONE_MCP_ENABLE_AUTH:-false}"
+      ONE_MCP_EXTERNAL_URL: "${ONE_MCP_EXTERNAL_URL:-https://localhost:9494}"
+      ONE_MCP_TRUST_PROXY: "${ONE_MCP_TRUST_PROXY:-uniquelocal}"
+    ports:
+      - "127.0.0.1:3118:3118"
+    restart: always
+    mem_limit: 2g
+    mem_reservation: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:${ONE_MCP_PORT:-3050}/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  proxy:
+    image: nginx:alpine
+    container_name: 1mcp-proxy
+    volumes:
+      - ./proxy/nginx.conf.token.template:/etc/nginx/templates/default.conf.template:ro
+    environment:
+      MCP_PROXY_TOKEN: ${MCP_PROXY_TOKEN:?Set in .env}
+      MCP_UPSTREAM: 1mcp
+      ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}
+    ports:
+      - "127.0.0.1:${PROXY_EXTERNAL_PORT:-9494}:8080"
+    depends_on:
+      1mcp:
+        condition: service_healthy
+    restart: always
