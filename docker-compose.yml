@@ -11,7 +11,8 @@ services:
     restart: "no"
 
   1mcp:
-    image: ghcr.io/1mcp-app/agent:latest
+    # Pinned: `latest` is never re-pulled, so an unpinned tag silently stays on whatever was first pulled
+    image: ghcr.io/1mcp-app/agent:v0.38.2
     container_name: 1mcp-agent
     env_file: .env
     # Lets servers reach MCPs running on the host; Docker Desktop provides this natively, Linux doesn't

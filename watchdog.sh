@@ -111,8 +111,14 @@ else
 fi
 
 log "INFO: Restarting 1mcp stack..."
-# --remove-orphans so retired services aren't left running
-if docker compose up -d --remove-orphans 2>>"$LOG"; then
+# `up -d` is a no-op on a running container, so a wedged agent needs an explicit restart
+if [[ "$AGENT_STATUS" == "running" ]]; then
+  RESTART_CMD=(docker compose restart 1mcp)
+else
+  # --remove-orphans so retired services aren't left running
+  RESTART_CMD=(docker compose up -d --remove-orphans)
+fi
+if "${RESTART_CMD[@]}" 2>>"$LOG"; then
   log "INFO: Restart complete"
 else
   log "ERROR: Restart failed (exit $?), will retry next cycle"
