@@ -13,6 +13,8 @@ MAX_LOG_SIZE=1048576 # 1 MB
 
 FAIL_STATE="$COMPOSE_DIR/logs/.probe-failures"
 RESTART_STATE="$COMPOSE_DIR/logs/.probe-last-restart"
+RESTART_MISSING="$COMPOSE_DIR/logs/.probe-restart-missing"  # servers missing when we last restarted
+QUARANTINE_STATE="$COMPOSE_DIR/logs/.probe-quarantined"
 WARMUP_SECS=180        # clients reconnect lazily; don't probe a just-started container
 PROBE_COOLDOWN=3600    # a genuine upstream outage shouldn't cause a restart loop
 FAILS_BEFORE_RESTART=2
@@ -79,11 +81,26 @@ if [[ "$AGENT_STATUS" == "running" ]]; then
     PROBE_RC=0
     PROBE_OUT=$("$COMPOSE_DIR/probe-servers.sh" --quiet 2>&1) || PROBE_RC=$?
     if (( PROBE_RC == 0 )); then
-      rm -f "$FAIL_STATE"
+      [[ -s "$QUARANTINE_STATE" ]] && log "INFO: all servers serving tools again, quarantine cleared: $(echo $(cat "$QUARANTINE_STATE"))"
+      rm -f "$FAIL_STATE" "$RESTART_MISSING" "$QUARANTINE_STATE"
       exit 0
     fi
     if (( PROBE_RC != 1 )); then
       log "WARN: server probe inconclusive (rc=$PROBE_RC): $PROBE_OUT"
+      exit 0
+    fi
+
+    export LC_ALL=C  # comm needs the same collation as sort
+    MISSING=$(sed -n 's/^MISSING: //p' <<<"$PROBE_OUT" | tr ',' '\n' | tr -d ' ' | sed '/^$/d' | sort -u)
+    # A server a restart already failed to fix won't be fixed by another one, and each restart drops every client.
+    QUARANTINED=$(comm -12 <(echo "$MISSING") <(sort -u "$RESTART_MISSING" 2>/dev/null))
+    ACTIONABLE=$(comm -23 <(echo "$MISSING") <(echo "$QUARANTINED"))
+    if [[ -n "$MISSING" && -z "$ACTIONABLE" ]]; then
+      rm -f "$FAIL_STATE"
+      if [[ "$QUARANTINED" != "$(cat "$QUARANTINE_STATE" 2>/dev/null)" ]]; then
+        echo "$QUARANTINED" > "$QUARANTINE_STATE"
+        log "WARN: still missing after a restart, quarantined until the probe is green (no more restarts for these): $(echo $QUARANTINED)"
+      fi
       exit 0
     fi
 
@@ -101,6 +118,7 @@ if [[ "$AGENT_STATUS" == "running" ]]; then
     fi
 
     date +%s > "$RESTART_STATE"
+    echo "$MISSING" > "$RESTART_MISSING"
     rm -f "$FAIL_STATE"
     log "WARN: servers still missing after ${FAILS} checks, restarting"
   else

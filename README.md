@@ -206,6 +206,7 @@ So once `/health` passes, the watchdog runs `probe-servers.sh`: it opens a real 
 - **Warmup** - no probing in the first 180s after the container starts.
 - **Two strikes** - a server must be missing on two consecutive checks.
 - **Cooldown** - at most one probe-triggered restart per hour.
+- **Quarantine** - a server still missing after a restart is logged once and no longer triggers restarts, since another restart won't fix it and each one drops every connected client. It clears when the probe goes green.
 - **Inconclusive is not failure** - if the probe itself errors, it's logged and not counted.
 
 `./ctl.sh probe` exits 0 when all servers are present, 1 when some are missing, 2 when the probe failed.
@@ -235,7 +236,7 @@ Keep `.env` out of git either way - back it up with a password manager.
 
 **Postgres queries fail with `MCP error -32603` while `psql` on the same port works.** The Postgres server opens its pool when the container starts, so if the tunnel wasn't up at that moment it holds a dead pool until restarted. Restart the agent. To prevent it, set `DATA_RO_CONNECT` to the script that opens your tunnel (SSM, SSH, etc.); `ctl.sh start` runs `<script> ${DATA_RO_ENV:-production} --as-user <user> --local-port <port> --daemon` before starting the stack, with user and port taken from `REPLICA_DATABASE_URL`. It's best-effort: if the tunnel fails, the stack starts anyway. `./ctl.sh ensure-tunnel` runs just that step.
 
-**An OAuth-based server stops returning tools.** Its upstream token expired and didn't refresh. Re-run that server's auth flow (for Slack, see [Re-auth](#slack-setup)). The watchdog restarts the stack when a server goes dark, but it can't refresh a token.
+**An OAuth-based server stops returning tools.** Its upstream token expired and didn't refresh. Re-run that server's auth flow (for Slack, see [Re-auth](#slack-setup)). The watchdog restarts the stack once when a server goes dark, then quarantines it if that didn't help - it can't refresh a token.
 
 **`./ctl.sh probe` fails with a connection reset while containers look healthy.** Docker Desktop's port forwarding is wedged. Restart Docker Desktop, not the stack.
 
