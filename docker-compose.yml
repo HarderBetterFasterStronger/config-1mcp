@@ -29,7 +29,7 @@ services:
     environment:
       ONE_MCP_HOST: "0.0.0.0"
       ONE_MCP_PORT: "${ONE_MCP_PORT:-3050}"
-      NODE_OPTIONS: "--max-old-space-size=256 --max-semi-space-size=32"
+      NODE_OPTIONS: "--max-old-space-size=768 --max-semi-space-size=32"
       ONE_MCP_CONFIG: "/usr/src/app/mcp.json"
       ONE_MCP_LOG_LEVEL: "${ONE_MCP_LOG_LEVEL:-info}"
       ONE_MCP_ENABLE_ENV_SUBSTITUTION: "${ONE_MCP_ENABLE_ENV_SUBSTITUTION:-true}"
@@ -41,7 +41,7 @@ services:
     ports:
       - "127.0.0.1:3118:3118"
     restart: always
-    mem_limit: 2g
+    mem_limit: 3g
     mem_reservation: 1g
     logging:
       driver: json-file
